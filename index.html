@@ -1,0 +1,1244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WikiDraft Studio</title>
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{display:flex;flex-direction:column;font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#202122;background:#f8f9fa}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+header{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;padding:8px 14px;background:#fff;border-bottom:1px solid #c8ccd1}
+.brand b{font-size:16px}
+#saved{margin-left:10px;font-size:12px;color:#14866d}
+#saved.bad{color:#b32424}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.btn{height:30px;padding:0 10px;border:1px solid #c8ccd1;border-radius:6px;background:#fff}
+.btn:hover{border-color:#36c;color:#36c}
+.btn.primary{background:#36c;border-color:#36c;color:#fff}
+.btn.primary:hover{background:#2a4b8d;color:#fff}
+.seg{display:inline-flex;border:1px solid #c8ccd1;border-radius:6px;overflow:hidden;background:#fff}
+.seg button{border:0;background:none;height:28px;padding:0 12px}
+.seg button.on{background:#eaf3ff;color:#36c;font-weight:600}
+#toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 14px;background:#fff;border-bottom:1px solid #eaecf0}
+#toolbar .sep{width:1px;height:20px;background:#c8ccd1;margin:0 4px}
+#work{flex:1;min-height:0;display:grid;gap:12px;padding:12px 14px}
+#work[data-mode=split]{grid-template-columns:1fr 1fr}
+#work[data-mode=visual] #pane-src,#work[data-mode=source] #pane-vis{display:none}
+@media (max-width:900px){#work[data-mode=split]{grid-template-columns:1fr;grid-template-rows:1fr 1fr}}
+.pane{min-height:0;min-width:0;background:#fff;border:1px solid #c8ccd1;border-radius:8px;overflow:auto}
+#src{display:block;width:100%;height:100%;border:0;padding:12px;resize:none;outline:none;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;tab-size:4}
+/* visual surface */
+#vis{padding:16px 22px 60px;min-height:100%;outline:none;overflow-wrap:anywhere}
+#vis.empty p:first-child::before{content:"Start writing, or paste wikitext here...";color:#a2a9b1}
+#vis h1,#vis h2{font-family:Georgia,"Linux Libertine","Times New Roman",serif;font-weight:400;border-bottom:1px solid #a2a9b1;margin:1em 0 .4em;padding-bottom:.1em}
+#vis h1{font-size:1.9em;margin-top:0}
+#vis h2{font-size:1.5em}
+#vis h3,#vis h4,#vis h5,#vis h6{margin:1em 0 .3em;font-weight:700}
+#vis h3{font-size:1.2em}
+#vis p{margin:.5em 0}
+#vis ul,#vis ol{margin:.3em 0 .5em 1.4em;padding:0}
+#vis .muted{color:#72777d;font-style:italic}
+#vis .wl,#vis a{color:#36c;cursor:pointer}
+#vis .ta{cursor:pointer;border-radius:3px}
+#vis .ta:hover{background:#eaf3ff}
+#vis .tpl,#vis .blk{background:#eaecf0;border:1px solid #c8ccd1;border-radius:4px;padding:0 4px;font:12px ui-monospace,Menlo,Consolas,monospace;color:#54595d}
+#vis .blk{display:block;margin:.5em 0;padding:4px 8px;cursor:pointer}
+#vis .cm{display:none}
+#vis .err{color:#b32424}
+sup.rf{color:#36c;cursor:pointer;font-size:.75em;line-height:0;user-select:all}
+sup.rf:hover{text-decoration:underline}
+.ib{float:right;clear:right;width:22em;max-width:100%;margin:0 0 1em 1.2em;background:#f8f9fa;border:1px solid #a2a9b1;font-size:.88em;cursor:pointer}
+.ib:hover{border-color:#36c}
+.ib .t{background:#eaecf0;text-align:center;font-weight:700;font-size:1.15em;padding:6px}
+.ib table{border-collapse:collapse;width:100%}
+.ib th,.ib td{padding:3px 8px;vertical-align:top;text-align:left;border-top:1px solid #eaecf0}
+.ib th{width:38%;font-weight:700}
+.rl{clear:both;cursor:default}
+ol.refs{column-width:22em;column-gap:2em;font-size:.92em}
+ol.refs li{break-inside:avoid;margin-bottom:.3em}
+.lnk,.rt button{border:0;background:none;color:#36c;padding:0 3px;font-size:.9em}
+.rt{margin-left:6px;opacity:.55;white-space:nowrap}
+ol.refs li:hover .rt{opacity:1}
+footer{display:flex;gap:18px;padding:5px 14px;font-size:12px;color:#54595d;background:#fff;border-top:1px solid #c8ccd1}
+/* dialogs */
+dialog{border:1px solid #a2a9b1;border-radius:10px;padding:18px 20px;width:min(560px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(0,0,0,.35)}
+dialog h3{margin:0 0 10px}
+.field{display:block;margin:8px 0 0;font-size:12px;font-weight:600;color:#54595d}
+.field input,.field textarea{display:block;width:100%;margin-top:3px;padding:6px 8px;border:1px solid #c8ccd1;border-radius:6px;font-weight:400;font-size:14px;color:#202122}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.btns{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.btns .left{margin-right:auto}
+.derr{color:#b32424;min-height:1.2em;margin:8px 0 0;font-size:13px;font-weight:600}
+#reuse-list button{display:block;width:100%;text-align:left;margin:4px 0;padding:6px 8px;background:#fff;border:1px solid #eaecf0;border-radius:6px}
+#reuse-list button:hover{border-color:#36c;background:#eaf3ff}
+#ib-rows{max-height:50vh;overflow:auto;margin-top:8px}
+.ibrow{display:grid;grid-template-columns:130px 1fr 28px;gap:6px;margin-bottom:6px}
+.ibrow input,.ibrow textarea{padding:4px 6px;border:1px solid #c8ccd1;border-radius:6px;width:100%;font-size:13px}
+.ibrow textarea{resize:vertical}
+#toast{position:fixed;right:16px;bottom:44px;background:#202122;color:#fff;padding:8px 14px;border-radius:8px;opacity:0;transform:translateY(10px);transition:.2s;pointer-events:none;max-width:80vw;z-index:9}
+#toast.on{opacity:1;transform:none}
+#watchbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 14px;background:#eaf3ff;border-bottom:1px solid #c8ccd1;color:#2a4b8d;font-weight:600}
+.viewing #toolbar,.viewing #b-import,.viewing #b-new,.viewing #b-share,.viewing #b-live,.viewing #b-watch,.viewing [data-mode=split],.viewing .rt{display:none}
+#b-live.on{border-color:#14866d;color:#14866d;font-weight:600}
+#b-live.err{border-color:#b32424;color:#b32424}
+.codebox{display:flex;gap:6px;margin-top:3px}.codebox input{flex:1;min-width:0}
+.note{font-size:12px;color:#54595d;margin:8px 0 0}
+.note.bad{color:#b32424;font-weight:600}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><b>WikiDraft Studio</b><span id="saved">Saved</span></div>
+  <div class="seg" id="modes">
+    <button data-mode="visual">Visual</button><button data-mode="split">Split</button><button data-mode="source">Source</button>
+  </div>
+  <div class="row">
+    <button class="btn" id="b-import">Import</button>
+    <button class="btn" id="b-download">Download .wiki</button>
+    <button class="btn" id="b-share">Share link</button>
+    <button class="btn" id="b-live">Go live</button>
+    <button class="btn" id="b-watch">Watch</button>
+    <button class="btn primary" id="b-copy">Copy wikitext</button>
+    <button class="btn" id="b-new">New</button>
+    <input type="file" id="file" accept=".wiki,.txt,.md,text/plain" hidden>
+  </div>
+</header>
+
+<div id="watchbar" hidden><span id="watchmsg">Connecting...</span><button class="btn" id="b-exit">Exit live view</button></div>
+
+<div id="toolbar">
+  <button class="btn" data-act="undo" title="Undo">&#8630;</button>
+  <button class="btn" data-act="redo" title="Redo">&#8631;</button>
+  <span class="sep"></span>
+  <select class="btn" id="heading" title="Heading level">
+    <option value="">Heading...</option><option value="0">Paragraph</option>
+    <option value="1">Title (=)</option><option value="2">Section (==)</option>
+    <option value="3">Subsection (===)</option><option value="4">Sub-subsection (====)</option>
+  </select>
+  <button class="btn" data-act="bold" title="Bold"><b>B</b></button>
+  <button class="btn" data-act="italic" title="Italic"><i>I</i></button>
+  <span class="sep"></span>
+  <button class="btn" data-act="link">Link</button>
+  <button class="btn" data-act="cite">Cite</button>
+  <span class="sep"></span>
+  <button class="btn" data-act="ul">&bull; List</button>
+  <button class="btn" data-act="ol">1. List</button>
+  <button class="btn" data-act="infobox">Infobox</button>
+  <button class="btn" data-act="refs">+ References</button>
+</div>
+
+<main id="work" data-mode="visual">
+  <section class="pane" id="pane-src"><textarea id="src" spellcheck="false" placeholder="Wikitext source. Edits here show up in the visual view."></textarea></section>
+  <section class="pane" id="pane-vis"><article id="vis" contenteditable="true" spellcheck="true"></article></section>
+</main>
+<footer><span id="s-words"></span><span id="s-chars"></span><span id="s-refs"></span><span>Runs entirely in this browser</span></footer>
+
+<dialog id="cite-dlg">
+  <div id="cite-form">
+    <h3 id="cite-h">Add citation</h3>
+    <div class="seg" id="cite-tabs">
+      <button type="button" data-t="web">Web</button><button type="button" data-t="news">News</button>
+      <button type="button" data-t="other">Other</button><button type="button" data-t="reuse">Reuse</button>
+    </div>
+    <div id="c-structured">
+      <label class="field">Title<input id="c-title" autocomplete="off"></label>
+      <label class="field">URL<input id="c-url" autocomplete="off"></label>
+      <div class="two">
+        <label class="field">Author (Last, First)<input id="c-author" autocomplete="off"></label>
+        <label class="field"><span id="c-work-l">Website</span><input id="c-work" autocomplete="off"></label>
+        <label class="field">Publisher<input id="c-pub" autocomplete="off"></label>
+        <label class="field">Date<input id="c-date" autocomplete="off" placeholder="22 May 2023"></label>
+      </div>
+      <label class="field">Access date<input id="c-acc" autocomplete="off"></label>
+    </div>
+    <div id="c-other" hidden>
+      <label class="field">Citation text or template<textarea id="c-text" rows="5"></textarea></label>
+    </div>
+    <div id="c-reuse" hidden><div id="reuse-list"></div></div>
+    <label class="field" id="c-name-w">Reference name (optional, lets you reuse it)<input id="c-name" autocomplete="off"></label>
+    <p class="derr" id="cite-err"></p>
+    <div class="btns"><button type="button" class="btn" data-close>Cancel</button><button type="button" class="btn primary" id="cite-ok">Insert</button></div>
+  </div>
+</dialog>
+
+<dialog id="link-dlg">
+  <div id="link-form">
+    <h3 id="l-h">Add link</h3>
+    <label class="field">Page title or URL<input id="l-target" autocomplete="off" placeholder="Mumbai  or  https://example.com"></label>
+    <label class="field">Displayed text (optional)<input id="l-label" autocomplete="off"></label>
+    <div class="btns"><button type="button" class="btn left" id="l-unlink" hidden>Remove link</button><button type="button" class="btn" data-close>Cancel</button><button type="button" class="btn primary" id="l-ok">Save</button></div>
+  </div>
+</dialog>
+
+<dialog id="ib-dlg">
+  <div id="ib-form">
+    <h3>Edit infobox</h3>
+    <label class="field">Template name<input id="ib-name" autocomplete="off"></label>
+    <div id="ib-rows"></div>
+    <div class="btns" style="justify-content:flex-start"><button type="button" class="btn" id="ib-add">+ Add field</button><button type="button" class="btn" id="ib-cite">Cite into selected field</button></div>
+    <div class="btns"><button type="button" class="btn left" id="ib-del">Remove infobox</button><button type="button" class="btn" data-close>Cancel</button><button type="button" class="btn primary" id="ib-ok">Save</button></div>
+  </div>
+</dialog>
+
+<dialog id="raw-dlg">
+  <div id="raw-form">
+    <h3>Edit wikitext</h3>
+    <label class="field">This block is kept exactly as written<textarea id="raw-text" rows="9" style="font:13px ui-monospace,Menlo,Consolas,monospace"></textarea></label>
+    <div class="btns"><button type="button" class="btn left" id="raw-del">Remove</button><button type="button" class="btn" data-close>Cancel</button><button type="button" class="btn primary" id="raw-ok">Save</button></div>
+  </div>
+</dialog>
+
+<dialog id="live-dlg">
+  <div>
+    <h3>Live view for your collaborator</h3>
+    <div id="lv-setup">
+      <p class="note" style="margin-top:0">One-time setup, about ten minutes. Your text is sent to a free Firebase database that you own, and your collaborator reads it from there.</p>
+      <ol style="margin:8px 0 0 18px;padding:0;font-size:13px">
+        <li>Go to console.firebase.google.com, create a project, then Build &rarr; Realtime Database &rarr; Create database (locked mode is fine).</li>
+        <li>Open the database's Rules tab, paste the rules below, and press Publish.</li>
+        <li>Copy the database URL shown at the top of the Data tab and paste it here.</li>
+      </ol>
+      <label class="field">Rules to paste<textarea id="lv-rules" rows="9" readonly style="font:12px ui-monospace,Menlo,Consolas,monospace"></textarea></label>
+      <div class="btns" style="justify-content:flex-start"><button type="button" class="btn" id="lv-copy-rules">Copy rules</button></div>
+      <label class="field">Database URL<input id="lv-db" autocomplete="off" placeholder="https://your-project-default-rtdb.firebaseio.com"></label>
+    </div>
+    <div id="lv-ready" hidden>
+      <p style="margin:0 0 6px">Database connected. Starting a session sends your draft to it and keeps it updated as you write.</p>
+      <p class="note">Anyone who has the link or code can read the draft while the session runs. Stopping the session deletes it from the database.</p>
+    </div>
+    <div id="lv-on" hidden>
+      <p style="margin:0 0 6px"><b>Your session is live.</b> Send either of these to your collaborator.</p>
+      <label class="field">Watch link<div class="codebox"><input id="lv-link" readonly><button type="button" class="btn" id="lv-copy-link">Copy</button></div></label>
+      <p class="note" id="lv-linknote"></p>
+      <label class="field">Watch code<div class="codebox"><input id="lv-code" readonly><button type="button" class="btn" id="lv-copy-code">Copy</button></div></label>
+      <p class="note">With the code, they open their own copy of this file, press Watch, and paste it in.</p>
+    </div>
+    <p class="derr" id="lv-msg"></p>
+    <div class="btns">
+      <button type="button" class="btn left" id="lv-change" hidden>Change database</button>
+      <button type="button" class="btn left" id="lv-stop" hidden>Stop session</button>
+      <button type="button" class="btn" data-close>Close</button>
+      <button type="button" class="btn primary" id="lv-save">Save and continue</button>
+      <button type="button" class="btn primary" id="lv-start" hidden>Start live session</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="watch-dlg">
+  <div>
+    <h3>Watch a live draft</h3>
+    <label class="field">Watch code or link<input id="w-code" autocomplete="off"></label>
+    <p class="note">You will see the draft update as the author writes. It is read-only, and your own draft stays untouched.</p>
+    <p class="derr" id="w-err"></p>
+    <div class="btns"><button type="button" class="btn" data-close>Cancel</button><button type="button" class="btn primary" id="w-go">Start watching</button></div>
+  </div>
+</dialog>
+
+<dialog id="ask-dlg">
+  <div>
+    <p id="ask-msg" style="margin:0 0 6px"></p>
+    <div class="btns"><button type="button" class="btn" data-ret="no">Cancel</button><button type="button" class="btn primary" id="ask-ok" data-ret="yes">OK</button></div>
+  </div>
+</dialog>
+
+<dialog id="text-dlg">
+  <div>
+    <p style="margin:0 0 6px">Copy this manually:</p>
+    <textarea id="text-box" rows="6" readonly style="width:100%;font:12px ui-monospace,Menlo,Consolas,monospace"></textarea>
+    <div class="btns"><button type="button" class="btn primary" data-close>Close</button></div>
+  </div>
+</dialog>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const ta = $('#src'), vis = $('#vis'), paneVis = $('#pane-vis'), work = $('#work');
+const KEY = 'wikidraft_lean_v1';
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const TOKENS = /[\uE000-\uE009]/g;
+
+let RAW = '', model = { refs: [], occ: [] }, tpls = [], cmts = [], rtags = [], inAtom = 0, refsShown = false;
+let dirty = null, visStale = false, placed = false, vrange = null, lastSurface = 'vis';
+let timer = null, toastTimer = null, viewing = false, watchToken = 0, ownDraft = '';
+const live = { db: '', id: '', on: false, last: null, timer: null, err: '' };
+
+/* =============== wikitext model =============== */
+const neutralize = t => t.replace(/<!--[\s\S]*?-->/g, m => m.replace(/[^\n]/g, ' ')).replace(TOKENS, ' ');
+
+function buildModel(raw) {
+  const text = neutralize(raw);
+  const re = /<ref\b([^>]*?)(?:\/>|>([\s\S]*?)<\/ref\s*>)/gi;
+  const nameRe = /name\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'\/>]+))/i;
+  const refs = [], occ = [], byName = new Map();
+  let m;
+  while ((m = re.exec(text))) {
+    const self = m[2] === undefined, body = self ? '' : raw.slice(m.index, m.index + m[0].length).replace(/^<ref\b[^>]*>/i, '').replace(/<\/ref\s*>$/i, '').trim();
+    const nm = nameRe.exec(m[1] || '');
+    const name = nm ? (nm[1] ?? nm[2] ?? nm[3] ?? '') : '';
+    const o = { start: m.index, end: m.index + m[0].length, self, ref: null };
+    if (name) {
+      let r = byName.get(name);
+      if (!r) { r = { num: refs.length + 1, name, body: '', defOcc: null, occ: [] }; refs.push(r); byName.set(name, r); }
+      r.occ.push(occ.length);
+      if (body && !r.body) { r.body = body; r.defOcc = occ.length; }
+      o.ref = r;
+    } else if (!self) {
+      const r = { num: refs.length + 1, name: '', body, defOcc: occ.length, occ: [occ.length] };
+      refs.push(r); o.ref = r;
+    }
+    occ.push(o);
+  }
+  return { refs, occ };
+}
+
+function tokenizeTpl(s) {
+  let out = '', i = 0;
+  while (i < s.length) {
+    if (s[i] === '{' && s[i + 1] === '{') {
+      let d = 0, j = i;
+      for (; j < s.length; j++) {
+        if (s[j] === '{' && s[j + 1] === '{') { d++; j++; }
+        else if (s[j] === '}' && s[j + 1] === '}') { d--; j++; if (d === 0) { j++; break; } }
+      }
+      if (d === 0) { tpls.push(s.slice(i, j)); out += '\uE002' + (tpls.length - 1) + '\uE003'; i = j; continue; }
+    }
+    out += s[i++];
+  }
+  return out;
+}
+
+function splitTop(s, ch) {
+  const parts = []; let cur = '', d = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i], n = s[i + 1];
+    if ((c === '{' && n === '{') || (c === '[' && n === '[')) { d++; cur += c + n; i++; continue; }
+    if ((c === '}' && n === '}') || (c === ']' && n === ']')) { d--; cur += c + n; i++; continue; }
+    if (c === ch && d === 0) { parts.push(cur); cur = ''; continue; }
+    cur += c;
+  }
+  parts.push(cur);
+  return parts;
+}
+
+function parseTpl(raw) {
+  const parts = splitTop(raw.replace(/^\{\{/, '').replace(/\}\}$/, ''), '|');
+  const params = parts.slice(1).map(p => {
+    const eq = splitTop(p, '=');
+    if (eq.length > 1 && /^[\w\s.\-]+$/.test(eq[0].trim())) return { raw: p, key: eq[0].trim().toLowerCase(), value: p.slice(eq[0].length + 1) };
+    return { raw: p, key: '', value: p };
+  });
+  return { name: parts[0].trim(), params };
+}
+
+// Hide refs and comments behind tokens so they never confuse template parsing
+function protect(raw) {
+  const keep = [];
+  const t = raw.replace(/<!--[\s\S]*?-->|<ref\b[^>]*?\/>|<ref\b[^>]*>[\s\S]*?<\/ref\s*>/gi, m => '\uE008' + (keep.push(m) - 1) + '\uE009');
+  return { t, back: s => s.replace(/\uE008(\d+)\uE009/g, (m, i) => keep[+i]) };
+}
+
+function untok(s) {
+  let p;
+  do {
+    p = s;
+    s = s.replace(/\uE000(\d+)\uE001/g, (m, i) => RAW.slice(model.occ[+i].start, model.occ[+i].end))
+         .replace(/\uE002(\d+)\uE003/g, (m, i) => tpls[+i])
+         .replace(/\uE004(\d+)\uE005/g, (m, i) => rtags[+i])
+         .replace(/\uE006(\d+)\uE007/g, (m, i) => cmts[+i]);
+  } while (s !== p);
+  return s;
+}
+
+/* =============== wikitext -> editable HTML =============== */
+const atomAttr = raw => ' contenteditable="false" data-raw="' + esc(raw) + '"';
+
+function inline(s) {
+  s = s.replace(/\[\[(?:File|Image|Category):[^\]]*\]\]/gi, m => { tpls.push(m); return '\uE002' + (tpls.length - 1) + '\uE003'; });
+  s = tokenizeTpl(s);
+  s = esc(s).replace(/&amp;(#?\w+;)/g, '&$1').replace(/&lt;br\s*\/?&gt;/gi, '<br>');
+  s = s.replace(/\[\[([^\]|]+)(?:\|([^\]]*))?\]\]/g, (m, t, l) => '<span class="wl" data-target="' + t + '">' + (l || t) + '</span>');
+  s = s.replace(/\[(https?:\/\/[^\s\]]+)(?:\s+([^\]]*))?\]/g, (m, u, l) => '<a class="xl" href="' + u + '">' + (l || u) + '</a>');
+  s = s.replace(/'''''(.+?)'''''/g, '<b><i>$1</i></b>').replace(/'''(.+?)'''/g, '<b>$1</b>').replace(/''(.+?)''/g, '<i>$1</i>');
+  s = s.replace(/\uE002(\d+)\uE003/g, (m, i) => tplHtml(tpls[+i]));
+  s = s.replace(/\uE000(\d+)\uE001/g, (m, i) => {
+    const o = model.occ[+i];
+    return o && o.ref ? '<sup class="rf"' + atomAttr(RAW.slice(o.start, o.end)) + ' data-n="' + o.ref.num + '">[' + o.ref.num + ']</sup>&#8203;'
+                      : '<sup class="rf err"' + atomAttr(o ? RAW.slice(o.start, o.end) : '') + '>[?]</sup>&#8203;';
+  });
+  s = s.replace(/\uE006(\d+)\uE007/g, (m, i) => '<span class="cm"' + atomAttr(cmts[+i]) + '></span>');
+  s = s.replace(/\uE004(\d+)\uE005/g, (m, i) => refsHtml(rtags[+i]));
+  return s;
+}
+
+function tplHtml(raw) {
+  if (raw[0] === '[') return '<span class="ta tpl"' + atomAttr(untok(raw)) + '>' + esc(raw.replace(/\|.*$/, ']]')) + '</span>';
+  const T = parseTpl(raw), n = T.name.toLowerCase().replace(/_/g, ' ');
+  if (n.startsWith('infobox')) return infoboxHtml(T, raw);
+  if (n === 'reflist' || n === 'references') return refsHtml(untok(raw));
+  const pos = T.params.filter(p => !p.key).map(p => p.value.trim());
+  let h, plain = true;
+  inAtom++;
+  try {
+    if (/^cite\b/.test(n) || n === 'citation') { h = citeHtml(T); plain = false; }
+    else if (/^(start date|birth date|end date)/.test(n)) {
+      const [y, m, d] = pos.map(x => parseInt(x, 10));
+      h = esc([d, m ? MONTHS[m - 1] : '', y].filter(Boolean).join(' '));
+    }
+    else if (n === 'bse' || n === 'nse') h = esc(T.name.toUpperCase()) + ': ' + inline(pos[0] || '');
+    else if (n === 'url') { const u = pos[0] || ''; h = '<a href="' + esc(/^https?:/i.test(u) ? u : 'https://' + u) + '" target="_blank" rel="noopener noreferrer">' + esc(pos[1] || u) + '</a>'; }
+    else if (n === 'increase' || n === 'decrease' || n === 'steady') h = (n === 'increase' ? '&#9650; ' : n === 'decrease' ? '&#9660; ' : '') + inline(pos[0] || '');
+    else if (['nowrap', 'small', 'lang', 'abbr'].includes(n)) h = inline(pos[pos.length - 1] || ' ');
+    else { h = '{{' + esc(T.name) + '}}'; plain = false; }
+  } finally { inAtom--; }
+  if (inAtom) return h;
+  return '<span class="ta' + (/^\{\{/.test(h) ? ' tpl' : '') + '"' + atomAttr(untok(raw)) + '>' + h + '</span>&#8203;';
+}
+
+function infoboxHtml(T, raw) {
+  let title = '', rows = '';
+  inAtom++;
+  try {
+    T.params.forEach(p => {
+      const v = p.value.trim();
+      if (!p.key || !v) return;
+      if (p.key === 'name') { title = v; return; }
+      if (/^(logo|image|alt|caption)/.test(p.key)) return;
+      const label = p.key.replace(/[_-]/g, ' ');
+      rows += '<tr><th>' + esc(label.charAt(0).toUpperCase() + label.slice(1)) + '</th><td>' + inline(v) + '</td></tr>';
+    });
+    title = inline(title || T.name);
+  } finally { inAtom--; }
+  return '<aside class="ib"' + atomAttr(untok(raw)) + ' title="Click to edit the infobox"><div class="t">' + title + '</div><table>' + rows + '</table></aside>';
+}
+
+function citeHtml(T) {
+  const g = (...ks) => { for (const k of ks) { const p = T.params.find(q => q.key === k); if (p && p.value.trim()) return p.value.trim().replace(/&#124;/g, '|'); } return ''; };
+  const last = g('last', 'last1', 'surname'), first = g('first', 'first1');
+  const author = last ? last + (first ? ', ' + first : '') : g('author');
+  const date = g('date', 'year'), title = g('title'), url = g('url');
+  const work = g('website', 'work', 'newspaper', 'journal', 'magazine'), pub = g('publisher');
+  const page = g('page', 'pages', 'at'), acc = g('access-date', 'accessdate');
+  let h = '';
+  if (author) h += inline(author) + (date ? ' (' + inline(date) + '). ' : '. ');
+  const label = title || url;
+  if (label) { const t = inline(label); h += '&ldquo;' + (url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + t + '</a>' : t) + '&rdquo;. '; }
+  if (work) h += '<i>' + inline(work) + '</i>. ';
+  if (pub) h += inline(pub) + '. ';
+  if (!author && date) h += inline(date) + '. ';
+  if (page) h += (/[-\u2013,]/.test(page) ? 'pp. ' : 'p. ') + inline(page) + '. ';
+  if (acc) h += 'Retrieved ' + inline(acc) + '.';
+  return h.trim();
+}
+
+function refsInner() {
+  if (!model.refs.length) return '';
+  inAtom++;
+  try {
+    return '<ol class="refs">' + model.refs.map(r => {
+      const body = r.body ? (/^\{\{\s*cite/i.test(r.body) ? tplHtml(r.body) : inline(r.body)) : '<span class="err">Missing definition for "' + esc(r.name) + '"</span>';
+      return '<li><button type="button" class="lnk" data-jump="' + r.num + '" title="Jump to first use">&uarr;</button>' + body +
+        '<span class="rt"><button type="button" data-edit="' + r.num + '">Edit</button>' + (r.name ? '<button type="button" data-reuse="' + r.num + '">Reuse</button>' : '') + '</span></li>';
+    }).join('') + '</ol>';
+  } finally { inAtom--; }
+}
+function refsHtml(rawTag) {
+  refsShown = true;
+  return '<div class="rl"' + atomAttr(rawTag) + '>' + refsInner() + '</div>';
+}
+const AUTO_HINT = '<h2>References</h2><p class="muted">Your wikitext has no &lt;references /&gt; or {{Reflist}} yet. Use + References to add one.</p>';
+
+const RAW_START = /^(\{\||[:;]|\[\[(?:File|Image|Category):|<(?:gallery|blockquote|div|pre|poem|math|table|syntaxhighlight|source)\b)/i;
+function rawEnd(lines, i) {
+  const L = lines[i].trim();
+  if (L.startsWith('{|')) { let j = i; while (j < lines.length && !/^\|\}/.test(lines[j].trim())) j++; return j - i + 1; }
+  const m = L.match(/^<(gallery|blockquote|div|pre|poem|math|table|syntaxhighlight|source)\b/i);
+  if (m && !new RegExp('</' + m[1] + '\\s*>', 'i').test(L)) { let j = i; while (j < lines.length && !new RegExp('</' + m[1] + '\\s*>', 'i').test(lines[j])) j++; return Math.min(j, lines.length - 1) - i + 1; }
+  return 1;
+}
+
+function renderDoc(raw, frag) {
+  RAW = raw; tpls = []; cmts = []; rtags = []; refsShown = false; inAtom = 0;
+  model = buildModel(raw);
+  const gap = s => s.replace(/<!--[\s\S]*?-->/g, m => '\uE006' + (cmts.push(m) - 1) + '\uE007');
+  let t = '', last = 0;
+  model.occ.forEach((o, i) => { t += gap(raw.slice(last, o.start).replace(TOKENS, ' ')) + '\uE000' + i + '\uE001'; last = o.end; });
+  t += gap(raw.slice(last).replace(TOKENS, ' '));
+  t = t.replace(/<references[^>]*\/>|<references[^>]*>\s*<\/references>/gi, m => '\uE004' + (rtags.push(m) - 1) + '\uE005');
+  t = tokenizeTpl(t);
+  const lines = t.split('\n');
+  let html = '', para = [], list = null;
+  const flushP = () => { if (para.length) { html += '<p>' + inline(para.join(' ')) + '</p>'; para = []; } };
+  const flushL = () => { if (list) { html += '</' + list + '>'; list = null; } };
+  for (let i = 0; i < lines.length; i++) {
+    const L = lines[i].trim();
+    if (!L) { flushP(); flushL(); continue; }
+    const tm = L.match(/^\uE002(\d+)\uE003$/), rt = L.match(/^\uE004(\d+)\uE005$/);
+    if (rt || (tm && /^\{\{\s*(infobox|reflist)/i.test(tpls[+tm[1]]))) { flushP(); flushL(); html += rt ? refsHtml(rtags[+rt[1]]) : tplHtml(tpls[+tm[1]]); continue; }
+    if (RAW_START.test(L)) {
+      const n = rawEnd(lines, i), txt = untok(lines.slice(i, i + n).join('\n'));
+      flushP(); flushL();
+      html += '<div class="blk"' + atomAttr(txt) + '>' + esc(/^\{\|/.test(txt) ? 'Table (click to edit wikitext)' : txt.split('\n')[0].slice(0, 70)) + '</div>';
+      i += n - 1; continue;
+    }
+    const h = L.match(/^(={1,6})\s*(.+?)\s*\1$/);
+    if (h) { flushP(); flushL(); html += '<h' + h[1].length + '>' + inline(h[2]) + '</h' + h[1].length + '>'; continue; }
+    if (/^-{4,}$/.test(L)) { flushP(); flushL(); html += '<hr>'; continue; }
+    const li = L.match(/^([*#]+)\s*(.*)$/);
+    if (li) {
+      flushP();
+      const kind = li[1][0] === '*' ? 'ul' : 'ol';
+      if (list !== kind) { flushL(); html += '<' + kind + '>'; list = kind; }
+      html += '<li data-d="' + li[1].length + '" style="margin-left:' + (li[1].length - 1) * 1.2 + 'em">' + inline(li[2]) + '</li>';
+      continue;
+    }
+    flushL(); para.push(L);
+  }
+  flushP(); flushL();
+  if (!frag && model.refs.length && !refsShown) html += '<div class="rl auto" contenteditable="false">' + AUTO_HINT + refsInner() + '</div>';
+  return html || (frag ? '' : '<p><br></p>');
+}
+
+/* =============== editable HTML -> wikitext =============== */
+function inlNode(n) {
+  if (n.nodeType === 3) return n.textContent.replace(/\u200B/g, '').replace(/[\u00A0\n]/g, ' ');
+  if (n.nodeType !== 1) return '';
+  if (n.hasAttribute('data-raw')) return n.getAttribute('data-raw');
+  const tg = n.tagName, inner = () => inl(n);
+  const fmt = mark => { const t = inner(), m = t.match(/^(\s*)([\s\S]*?)(\s*)$/); return m[2] ? m[1] + mark + m[2] + mark + m[3] : t; };
+  if (tg === 'B' || tg === 'STRONG') return fmt("'''");
+  if (tg === 'I' || tg === 'EM') return fmt("''");
+  if (tg === 'BR') return '<br />';
+  if (tg === 'A') { const h = n.getAttribute('href') || '', t = inner().trim(); return !h ? t : (t && t !== h ? '[' + h + ' ' + t + ']' : '[' + h + ']'); }
+  if (n.classList.contains('wl')) { const tg2 = n.dataset.target || '', t = inner().trim(); return !tg2 ? t : (t && t !== tg2 ? '[[' + tg2 + '|' + t + ']]' : '[[' + tg2 + ']]'); }
+  return inner();
+}
+const inl = (p, skipLists) => { let s = ''; p.childNodes.forEach(n => { if (skipLists && n.nodeType === 1 && /^(UL|OL)$/.test(n.tagName)) return; s += inlNode(n); }); return s; };
+const clean = s => s.replace(/(\s*<br \/>)+\s*$/, '').trim();
+
+function listLines(l, d, out) {
+  const m = l.tagName === 'UL' ? '*' : '#';
+  l.childNodes.forEach(li => {
+    if (li.nodeType !== 1) return;
+    if (li.tagName === 'LI') {
+      const dd = Math.max(d, +li.dataset.d || 1), t = clean(inl(li, true));
+      if (t) out.push(m.repeat(dd) + ' ' + t);
+      li.querySelectorAll(':scope > ul, :scope > ol').forEach(sub => listLines(sub, dd + 1, out));
+    } else if (/^(UL|OL)$/.test(li.tagName)) listLines(li, d + 1, out);
+  });
+}
+
+function serialize(root) {
+  const out = []; let run = '';
+  const flush = () => { const t = clean(run); if (t) out.push(t); run = ''; };
+  root.childNodes.forEach(n => {
+    if (n.nodeType === 3) { run += inlNode(n); return; }
+    if (n.nodeType !== 1) return;
+    const tg = n.tagName;
+    if (n.classList.contains('auto')) { flush(); return; }
+    if (n.matches('aside.ib, div.blk, div.rl')) { flush(); if (n.hasAttribute('data-raw')) out.push(n.getAttribute('data-raw')); return; }
+    if (/^H[1-6]$/.test(tg)) { flush(); const t = clean(inl(n)), k = '='.repeat(+tg[1]); if (t) out.push(k + ' ' + t + ' ' + k); return; }
+    if (tg === 'HR') { flush(); out.push('----'); return; }
+    if (tg === 'UL' || tg === 'OL') { flush(); const l = []; listLines(n, 1, l); if (l.length) out.push(l.join('\n')); return; }
+    if (tg === 'P' || tg === 'DIV') {
+      flush();
+      if (n.querySelector(':scope > p, :scope > ul, :scope > ol, :scope > h1, :scope > h2, :scope > h3, :scope > div')) { const sub = serialize(n); if (sub) out.push(sub); }
+      else { const t = clean(inl(n)); if (t) out.push(t); }
+      return;
+    }
+    run += inlNode(n);
+  });
+  flush();
+  return out.join('\n\n');
+}
+
+/* =============== sync between the two views =============== */
+function wordCount(text) {
+  tpls = [];
+  const t = tokenizeTpl(text.replace(/<!--[\s\S]*?-->|<ref\b[^>]*?\/>|<ref\b[^>]*>[\s\S]*?<\/ref\s*>/gi, ' '));
+  return t.replace(TOKENS, ' ').replace(/[=\[\]'|*#{}<>\d]/g, ' ').split(/\s+/).filter(w => /[A-Za-z\u00C0-\u024F]/.test(w)).length;
+}
+function updateStats(text) {
+  $('#s-words').textContent = wordCount(text) + ' words';
+  $('#s-chars').textContent = text.length + ' characters';
+  $('#s-refs').textContent = model.refs.length + ' reference' + (model.refs.length === 1 ? '' : 's');
+  vis.classList.toggle('empty', !text.trim());
+}
+
+function renderVisual(text) {
+  const sc = paneVis.scrollTop;
+  vis.innerHTML = renderDoc(text);
+  vrange = null; visStale = false; dirty = null;
+  paneVis.scrollTop = sc;
+  updateStats(text);
+}
+
+function renumber() {
+  const byName = new Map(model.refs.filter(r => r.name).map(r => [r.name, r.num]));
+  const anon = new Map();
+  model.refs.filter(r => !r.name).forEach(r => { if (!anon.has(r.body)) anon.set(r.body, []); anon.get(r.body).push(r.num); });
+  vis.querySelectorAll('sup.rf').forEach(p => {
+    const mm = /^<ref\b([^>]*?)(?:\/>|>([\s\S]*?)<\/ref\s*>)$/i.exec(p.getAttribute('data-raw') || '');
+    let n;
+    if (mm) {
+      const nm = /name\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'\/>]+))/i.exec(mm[1] || '');
+      const name = nm ? (nm[1] ?? nm[2] ?? nm[3]) : '';
+      n = name ? byName.get(name) : (anon.get((mm[2] || '').trim()) || []).shift();
+    }
+    p.textContent = '[' + (n || '?') + ']';
+    p.classList.toggle('err', !n);
+    if (n) p.dataset.n = n;
+  });
+}
+
+function refreshRefs() {
+  tpls = [];
+  const real = [...vis.querySelectorAll('.rl:not(.auto)')];
+  real.forEach(c => { c.innerHTML = refsInner(); });
+  let auto = vis.querySelector('.rl.auto');
+  if (real.length || !model.refs.length) { if (auto) auto.remove(); return; }
+  if (!auto) { auto = document.createElement('div'); auto.className = 'rl auto'; auto.contentEditable = 'false'; vis.appendChild(auto); }
+  auto.innerHTML = AUTO_HINT + refsInner();
+}
+
+function visToSrc() {
+  const t = serialize(vis);
+  if (!vis.firstElementChild && !vis.textContent) vis.innerHTML = '<p><br></p>';
+  ta.value = t; RAW = t; model = buildModel(t);
+  renumber(); refreshRefs(); updateStats(t); dirty = null;
+}
+function srcToVis() { renderVisual(ta.value); }
+
+const modeNow = () => work.dataset.mode;
+function schedule() { clearTimeout(timer); timer = setTimeout(flush, 120); }
+function flush() {
+  clearTimeout(timer);
+  if (dirty === 'vis') visToSrc();
+  else if (dirty === 'src') { if (modeNow() === 'source') { visStale = true; RAW = ta.value; model = buildModel(RAW); updateStats(ta.value); dirty = null; } else srcToVis(); }
+  save();
+}
+function getText() { if (dirty) flush(); return ta.value; }
+function commitText(text) { ta.value = text; placed = false; renderVisual(text); save(); }
+function commitFromVisual() { commitText(serialize(vis)); }
+function setText(txt) { ta.setSelectionRange(0, 0); commitText(txt); }
+
+/* =============== save, toast, confirm =============== */
+function setSaved(ok) { const s = $('#saved'); s.textContent = ok ? 'Saved in this browser' : 'Not saved (browser storage blocked). Use Download .wiki'; s.className = ok ? '' : 'bad'; }
+function save() { if (viewing) return; try { localStorage.setItem(KEY, ta.value); setSaved(true); } catch (e) { setSaved(false); } if (live.on) liveSoon(); }
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 3200); }
+function ask(msg, okLabel) {
+  return new Promise(res => {
+    const d = $('#ask-dlg'); $('#ask-msg').textContent = msg; $('#ask-ok').textContent = okLabel || 'OK';
+    d.addEventListener('close', () => res(d.returnValue === 'yes'), { once: true });
+    d.returnValue = 'no'; d.showModal();
+  });
+}
+
+/* =============== cursor tracking =============== */
+const HOSTS = '[contenteditable="false"], [data-raw]';
+function rangeUsable(r) {
+  if (!r) return false;
+  const n = r.startContainer;
+  if (!n || !n.isConnected || !vis.contains(n)) return false;
+  const el = n.nodeType === 3 ? n.parentElement : n;
+  return !!el && el !== vis && !el.closest(HOSTS) && !!el.closest('p, li, h1, h2, h3, h4, h5, h6');
+}
+document.addEventListener('selectionchange', () => {
+  const s = getSelection();
+  if (!s || !s.rangeCount) return;
+  const r = s.getRangeAt(0);
+  if (vis.contains(r.commonAncestorContainer)) vrange = rangeUsable(r) ? r.cloneRange() : null;
+});
+function curRange() {
+  const s = getSelection();
+  if (s && s.rangeCount && vis.contains(s.anchorNode)) { const r = s.getRangeAt(0); if (rangeUsable(r)) return r.cloneRange(); }
+  return rangeUsable(vrange) ? vrange.cloneRange() : null;
+}
+function restoreV() {
+  const r = curRange();
+  if (!r) { vrange = null; return false; }
+  vis.focus({ preventScroll: true });
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  vrange = r.cloneRange();
+  return true;
+}
+function surface() { const m = modeNow(); return m === 'source' ? 'src' : m === 'visual' ? 'vis' : lastSurface; }
+vis.addEventListener('focusin', () => { lastSurface = 'vis'; });
+ta.addEventListener('focus', () => { lastSurface = 'src'; });
+['click', 'keyup', 'select', 'focus'].forEach(ev => ta.addEventListener(ev, () => { placed = true; }));
+
+/* =============== source-side editing =============== */
+function edit(a, b, txt) {
+  ta.focus({ preventScroll: true });
+  ta.setSelectionRange(a, b);
+  let ok = false;
+  try { ok = document.execCommand('insertText', false, txt); } catch (e) {}
+  if (!ok) { ta.setRangeText(txt, a, b, 'end'); ta.dispatchEvent(new Event('input')); }
+}
+function wrap(b, a) {
+  const s = ta.selectionStart, e = ta.selectionEnd, sel = ta.value.slice(s, e) || 'text';
+  edit(s, e, b + sel + a);
+  ta.setSelectionRange(s + b.length, s + b.length + sel.length);
+}
+function lineRange(s, e) { const v = ta.value, a = v.lastIndexOf('\n', s - 1) + 1; let b = v.indexOf('\n', e); if (b < 0) b = v.length; return [a, b]; }
+function setHeadingSrc(level) {
+  const [a, b] = lineRange(ta.selectionStart, ta.selectionStart);
+  const plain = ta.value.slice(a, b).replace(/^\s*(={1,6})\s*(.*?)\s*\1\s*$/, '$2').trim(), mk = '='.repeat(level);
+  edit(a, b, level ? mk + ' ' + (plain || 'Heading') + ' ' + mk : plain);
+}
+function listifySrc(prefix) {
+  const [a, b] = lineRange(ta.selectionStart, ta.selectionEnd);
+  edit(a, b, ta.value.slice(a, b).split('\n').map(l => l.trim() ? prefix + l.replace(/^[*#]+\s*/, '') : l).join('\n'));
+}
+
+/* =============== visual-side editing =============== */
+function vexec(cmd, arg) {
+  if (!restoreV()) { toast('Click in the text first'); return false; }
+  document.execCommand(cmd, false, arg);
+  dirty = 'vis'; schedule(); return true;
+}
+// Swap the block the cursor is in for another tag (p, h2...). Moves the content over so citations inside it survive.
+function setBlockV(tag) {
+  if (!restoreV()) return toast('Click in the text first');
+  const n = getSelection().getRangeAt(0).startContainer, blk = (n.nodeType === 3 ? n.parentElement : n).closest('p, h1, h2, h3, h4, h5, h6');
+  if (!blk || blk.parentElement !== vis) return toast('Headings can only be applied to a normal paragraph');
+  const nb = document.createElement(tag);
+  while (blk.firstChild) nb.appendChild(blk.firstChild);
+  blk.replaceWith(nb);
+  const r = document.createRange(); r.selectNodeContents(nb); r.collapse(true);
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  visToSrc(); save();
+}
+const pillHtml = tag => '<sup class="rf"' + atomAttr(tag) + '>[?]</sup>';
+// Insert HTML at a range. Tries the browser command (keeps undo), checks it worked, otherwise inserts the nodes directly.
+function insertHtmlAt(r, html) {
+  vis.focus({ preventScroll: true });
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  const before = vis.innerHTML;
+  let ok = false;
+  try { ok = document.execCommand('insertHTML', false, html); } catch (e) {}
+  if (vis.innerHTML === before) {                  // the command did nothing, so insert the nodes by hand
+    const rr = r.cloneRange();
+    if (!rangeUsable(rr)) throw new Error('The cursor position was lost');
+    const tpl = document.createElement('template'); tpl.innerHTML = html;
+    const frag = tpl.content, lastNode = frag.lastChild;
+    rr.deleteContents(); rr.insertNode(frag);
+    const c = document.createRange(); c.setStartAfter(lastNode); c.collapse(true);
+    s.removeAllRanges(); s.addRange(c);
+  }
+  vis.querySelectorAll(':scope > sup.rf').forEach(x => { const pv = x.previousElementSibling; if (pv && /^(P|LI|H[1-6])$/.test(pv.tagName)) pv.appendChild(x); });
+}
+function insertPill(r, tag) {
+  if (!rangeUsable(r)) { toast('Click in the text where it should go, then try again'); return; }
+  // never put a citation inside a link label
+  const n = r.startContainer, host = (n.nodeType === 3 ? n.parentElement : n).closest('span.wl, a.xl');
+  if (host) { r = document.createRange(); r.setStartAfter(host); r.collapse(true); }
+  const count = vis.querySelectorAll('sup.rf').length;
+  try { insertHtmlAt(r, '&#8203;' + pillHtml(tag) + '&#8203;'); } catch (e) { return toast('Could not insert the citation: ' + e.message); }
+  visToSrc(); save();
+  if (vis.querySelectorAll('sup.rf').length <= count) toast('The citation was not inserted. Click in the text and try again');
+}
+// Returns a function that inserts a ref tag at the cursor, or null (with a hint) when there is no cursor
+function insertionTarget() {
+  if (surface() === 'src') {
+    if (!placed) { toast('Click in the text where it should go first'); return null; }
+    const pos = ta.selectionEnd;
+    return tag => edit(pos, pos, tag);
+  }
+  const r = curRange();
+  if (!r) { toast('Click in the text where it should go first'); return null; }
+  r.collapse(false);
+  return tag => insertPill(r, tag);
+}
+
+/* =============== citations =============== */
+const cs = { tab: 'web', editNum: null, insert: null, extras: [] };
+const KNOWN = ['last', 'last1', 'first', 'first1', 'author', 'title', 'url', 'website', 'work', 'newspaper', 'publisher', 'date', 'year', 'access-date', 'accessdate'];
+const pipeEsc = v => v.replace(/\|/g, '&#124;');
+const cleanName = v => v.trim().replace(/\s+/g, '-').replace(/["'<>\/=&]/g, '');
+const today = () => { const d = new Date(); return d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear(); };
+
+function setTab(t) {
+  cs.tab = t;
+  document.querySelectorAll('#cite-tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  $('#c-structured').hidden = !(t === 'web' || t === 'news');
+  $('#c-other').hidden = t !== 'other';
+  $('#c-reuse').hidden = t !== 'reuse';
+  $('#c-name-w').hidden = t === 'reuse';
+  $('#cite-ok').hidden = t === 'reuse';
+  $('#c-work-l').textContent = t === 'news' ? 'Newspaper' : 'Website';
+  $('#cite-err').textContent = '';
+}
+
+function openCite(num, target) {
+  if (num == null && !target) { target = insertionTarget(); if (!target) return; }
+  const text = getText(); RAW = text; model = buildModel(text);
+  ['c-title', 'c-url', 'c-author', 'c-work', 'c-pub', 'c-date', 'c-text', 'c-name'].forEach(id => $('#' + id).value = '');
+  $('#c-acc').value = today();
+  cs.editNum = num; cs.insert = target; cs.extras = [];
+  $('#cite-h').textContent = num == null ? 'Add citation' : 'Edit citation [' + num + ']';
+  $('#cite-ok').textContent = num == null ? 'Insert' : 'Save';
+  $('#cite-tabs [data-t=reuse]').hidden = num != null;
+  let tab = 'web';
+  if (num != null) {
+    const r = model.refs[num - 1];
+    if (!r) return;
+    $('#c-name').value = r.name;
+    const m = /^\{\{\s*cite\s+(web|news)\b/i.exec(r.body);
+    if (m) {
+      tab = m[1].toLowerCase();
+      const T = parseTpl(r.body);
+      const g = (...ks) => { for (const k of ks) { const p = T.params.find(q => q.key === k); if (p) return p.value.trim().replace(/&#124;/g, '|'); } return ''; };
+      const last = g('last', 'last1'), first = g('first', 'first1');
+      $('#c-author').value = last ? last + (first ? ', ' + first : '') : g('author');
+      $('#c-title').value = g('title'); $('#c-url').value = g('url');
+      $('#c-work').value = g('website', 'work', 'newspaper'); $('#c-pub').value = g('publisher');
+      $('#c-date').value = g('date', 'year'); $('#c-acc').value = g('access-date', 'accessdate');
+      cs.extras = T.params.filter(p => !KNOWN.includes(p.key) && p.raw.trim()).map(p => '|' + p.raw.trim());
+    } else { tab = 'other'; $('#c-text').value = r.body; }
+  } else {
+    const named = model.refs.filter(r => r.name);
+    $('#reuse-list').innerHTML = named.length ? '' : '<p class="muted">No named references yet. Give a citation a name to reuse it.</p>';
+    named.forEach(r => {
+      const b = document.createElement('button'); b.type = 'button';
+      const tt = /^\{\{\s*cite/i.test(r.body) ? parseTpl(r.body).params.find(p => p.key === 'title') : null;
+      b.textContent = '[' + r.num + '] ' + r.name + (tt ? ': ' + tt.value.trim() : '');
+      b.onclick = () => { $('#cite-dlg').close(); cs.insert('<ref name="' + r.name + '" />'); };
+      $('#reuse-list').appendChild(b);
+    });
+  }
+  setTab(tab);
+  $('#cite-dlg').showModal();
+  (tab === 'other' ? $('#c-text') : $('#c-title')).focus();
+}
+
+function citeBody() {
+  if (cs.tab === 'other') return $('#c-text').value.trim();
+  const v = id => $('#' + id).value.trim();
+  const title = v('c-title'), url = v('c-url');
+  if (!title && !url) return '';
+  const p = ['{{' + (cs.tab === 'news' ? 'cite news' : 'cite web')];
+  const au = v('c-author');
+  if (au) { const i = au.indexOf(','); if (i > 0) { p.push('|last=' + pipeEsc(au.slice(0, i).trim())); p.push('|first=' + pipeEsc(au.slice(i + 1).trim())); } else p.push('|author=' + pipeEsc(au)); }
+  if (title) p.push('|title=' + pipeEsc(title));
+  if (url) p.push('|url=' + url);
+  if (v('c-work')) p.push('|' + (cs.tab === 'news' ? 'newspaper' : 'website') + '=' + pipeEsc(v('c-work')));
+  if (v('c-pub')) p.push('|publisher=' + pipeEsc(v('c-pub')));
+  if (v('c-date')) p.push('|date=' + v('c-date'));
+  if (v('c-acc')) p.push('|access-date=' + v('c-acc'));
+  return p.concat(cs.extras).join(' ') + '}}';
+}
+
+$('#cite-ok').addEventListener('click', () => {
+  const err = m => { $('#cite-err').textContent = m; };
+  try { submitCite(err); } catch (ex) { err('Error: ' + ex.message); }
+});
+function submitCite(err) {
+  const body = citeBody();
+  if (!body) return err(cs.tab === 'other' ? 'Enter the citation text.' : 'Enter at least a title or a URL.');
+  if (/<\/?ref\b/i.test(body)) return err('Leave out the <ref> tags. The tool adds them.');
+  const name = cleanName($('#c-name').value);
+  const text = getText(), M = buildModel(text);
+  const clash = M.refs.find(r => r.name === name && r.num !== cs.editNum);
+  if (name && clash) return err('That name is already used by reference [' + clash.num + ']. Pick another, or use the Reuse tab.');
+  const tag = name ? '<ref name="' + name + '">' + body + '</ref>' : '<ref>' + body + '</ref>';
+  if (cs.editNum == null) { $('#cite-dlg').close(); cs.insert(tag); return; }
+  const r = M.refs[cs.editNum - 1];
+  if (!r) return err('That reference no longer exists.');
+  if (!name && r.occ.length > 1) return err('This citation is reused elsewhere, so it needs a name.');
+  const target = M.occ[r.defOcc != null ? r.defOcc : r.occ[0]];
+  const edits = [{ a: target.start, b: target.end, t: tag }];
+  if (name && name !== r.name) r.occ.forEach(i => { const o = M.occ[i]; if (o !== target && o.self) edits.push({ a: o.start, b: o.end, t: '<ref name="' + name + '" />' }); });
+  let out = text;
+  edits.sort((x, y) => y.a - x.a).forEach(x => { out = out.slice(0, x.a) + x.t + out.slice(x.b); });
+  $('#cite-dlg').close();
+  commitText(out);
+  toast('Citation [' + cs.editNum + '] updated');
+}
+$('#cite-tabs').addEventListener('click', e => { const b = e.target.closest('button[data-t]'); if (b) setTab(b.dataset.t); });
+
+/* =============== links =============== */
+const lk = { el: null, r: null, s: 0, e: 0 };
+function openLink(el) {
+  lk.el = el || null; lk.r = null;
+  if (el) {
+    const isX = el.tagName === 'A';
+    $('#l-target').value = isX ? el.getAttribute('href') : el.dataset.target; $('#l-label').value = el.textContent;
+  } else if (surface() === 'src') {
+    lk.s = ta.selectionStart; lk.e = ta.selectionEnd;
+    $('#l-target').value = ''; $('#l-label').value = ta.value.slice(lk.s, lk.e);
+  } else {
+    lk.r = curRange();
+    if (!lk.r) return toast('Click in the text where it should go first');
+    $('#l-target').value = ''; $('#l-label').value = lk.r.toString();
+  }
+  $('#l-h').textContent = el ? 'Edit link' : 'Add link';
+  $('#l-unlink').hidden = !el;
+  $('#link-dlg').showModal(); $('#l-target').focus();
+}
+const linkHtml = (t, l) => /^https?:\/\//i.test(t)
+  ? '<a class="xl" href="' + esc(t) + '">' + esc(l || t) + '</a>'
+  : '<span class="wl" data-target="' + esc(t) + '">' + esc(l || t) + '</span>';
+$('#l-ok').addEventListener('click', () => {
+  const t = $('#l-target').value.trim(), l = $('#l-label').value.trim();
+  if (!t) return;
+  $('#link-dlg').close();
+  if (lk.el) { const tmp = document.createElement('div'); tmp.innerHTML = linkHtml(t, l); lk.el.replaceWith(tmp.firstChild); visToSrc(); save(); }
+  else if (lk.r) {
+    if (!rangeUsable(lk.r)) return toast('Click in the text where it should go, then try again');
+    try { insertHtmlAt(lk.r, '&#8203;' + linkHtml(t, l) + '&#8203;'); } catch (e) { return toast('Could not insert the link: ' + e.message); }
+    visToSrc(); save();
+  } else edit(lk.s, lk.e, /^https?:\/\//i.test(t) ? '[' + t + (l ? ' ' + l : '') + ']' : '[[' + t + (l && l !== t ? '|' + l : '') + ']]');
+});
+$('#l-unlink').onclick = () => { $('#link-dlg').close(); lk.el.replaceWith(document.createTextNode(lk.el.textContent)); visToSrc(); save(); };
+
+/* =============== infobox and raw-block dialogs =============== */
+let atomEl = null, ibField = null, ibBack = null;
+function ibRow(k, v) {
+  const row = document.createElement('div'); row.className = 'ibrow';
+  row.innerHTML = '<input class="k" placeholder="field"><textarea class="v" rows="2"></textarea><button type="button" class="btn" title="Remove field">&times;</button>';
+  row.querySelector('.k').value = k; row.querySelector('.v').value = v;
+  row.querySelector('button').onclick = () => row.remove();
+  $('#ib-rows').appendChild(row);
+  return row;
+}
+function openInfobox(el) {
+  atomEl = el; ibField = null;
+  const P = protect(el.getAttribute('data-raw')), T = parseTpl(P.t);
+  $('#ib-name').value = T.name; $('#ib-rows').innerHTML = '';
+  T.params.forEach(p => ibRow(p.key, P.back(p.key ? p.value.trim() : p.raw.trim())));
+  $('#ib-dlg').showModal();
+}
+$('#ib-rows').addEventListener('focusin', e => { if (e.target.classList.contains('v')) ibField = e.target; });
+$('#ib-add').onclick = () => ibRow('', '').querySelector('.k').focus();
+$('#ib-cite').onclick = () => {
+  const f = ibField || $('#ib-rows .v');
+  if (!f) return;
+  const pos = f.selectionEnd;
+  openCite(null, tag => { f.focus(); f.setRangeText(tag, pos, pos, 'end'); });
+};
+$('#ib-ok').addEventListener('click', () => {
+  const lines = [...$('#ib-rows').children].map(r => {
+    const k = r.querySelector('.k').value.trim(), v = r.querySelector('.v').value.trim();
+    return k ? '| ' + k + ' = ' + v : (v ? '| ' + v : '');
+  }).filter(Boolean);
+  atomEl.setAttribute('data-raw', '{{' + ($('#ib-name').value.trim() || 'Infobox company') + '\n' + lines.join('\n') + '\n}}');
+  $('#ib-dlg').close(); commitFromVisual();
+});
+$('#ib-del').onclick = () => { $('#ib-dlg').close(); atomEl.remove(); commitFromVisual(); };
+
+function openRaw(el) { atomEl = el; $('#raw-text').value = el.getAttribute('data-raw'); $('#raw-dlg').showModal(); $('#raw-text').focus(); }
+$('#raw-ok').addEventListener('click', () => {
+  const v = $('#raw-text').value.trim();
+  if (v) atomEl.setAttribute('data-raw', v); else atomEl.remove();
+  $('#raw-dlg').close(); commitFromVisual();
+});
+$('#raw-del').onclick = () => { $('#raw-dlg').close(); atomEl.remove(); commitFromVisual(); };
+
+/* =============== toolbar =============== */
+const SKELETON = '{{Infobox company\n| name = \n| type = \n| industry = \n| founded = \n| founder = \n| hq_location_city = \n| hq_location_country = \n| key_people = \n| products = \n| revenue = \n| num_employees = \n| website = \n}}\n\n';
+const A = {
+  undo() { (surface() === 'src' ? ta : vis).focus(); document.execCommand('undo'); },
+  redo() { (surface() === 'src' ? ta : vis).focus(); document.execCommand('redo'); },
+  bold() { surface() === 'src' ? wrap("'''", "'''") : vexec('bold'); },
+  italic() { surface() === 'src' ? wrap("''", "''") : vexec('italic'); },
+  link() { openLink(); },
+  cite() { openCite(null); },
+  ul() { if (surface() === 'src') listifySrc('* '); else vexec('insertUnorderedList'); },
+  ol() { if (surface() === 'src') listifySrc('# '); else vexec('insertOrderedList'); },
+  infobox() {
+    const t = getText();
+    if (/\{\{\s*infobox/i.test(t)) return toast('This draft already has an infobox');
+    if (surface() === 'src') { edit(0, 0, SKELETON); const p = SKELETON.indexOf('| name = ') + 9; ta.setSelectionRange(p, p); placed = true; }
+    else { commitText(SKELETON + t); toast('Infobox added. Click it to fill in the fields'); }
+  },
+  refs() {
+    const t = getText();
+    if (/<references\b|\{\{\s*reflist/i.test(t)) return toast('This draft already has a references section');
+    const add = (t && !t.endsWith('\n') ? '\n' : '') + '\n== References ==\n{{Reflist}}\n';
+    if (surface() === 'src') edit(t.length, t.length, add); else commitText(t + add);
+  }
+};
+$('#toolbar').addEventListener('mousedown', e => { if (!e.target.closest('select')) e.preventDefault(); });
+$('#toolbar').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) A[b.dataset.act](); });
+$('#heading').addEventListener('change', e => {
+  const v = e.target.value; e.target.value = '';
+  if (v === '') return;
+  if (surface() === 'src') { if (!placed) return toast('Click in the text first'); setHeadingSrc(+v); }
+  else setBlockV(+v ? 'h' + v : 'p');
+});
+ta.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === 'b' || e.key === 'i')) { e.preventDefault(); A[e.key === 'b' ? 'bold' : 'italic'](); }
+});
+ta.addEventListener('input', () => { dirty = 'src'; schedule(); });
+vis.addEventListener('input', () => { dirty = 'vis'; schedule(); });
+
+/* =============== visual surface events =============== */
+vis.addEventListener('click', e => {
+  const t = e.target;
+  if (viewing && !t.closest('[data-jump]')) return;
+  const jump = t.closest('[data-jump]'), ed = t.closest('[data-edit]'), re = t.closest('[data-reuse]');
+  if (jump) { const p = vis.querySelector('sup.rf[data-n="' + jump.dataset.jump + '"]'); if (p) p.scrollIntoView({ block: 'center' }); return; }
+  if (ed) return openCite(+ed.dataset.edit);
+  if (re) { const r = model.refs[+re.dataset.reuse - 1], tg = insertionTarget(); if (r && tg) tg('<ref name="' + r.name + '" />'); return; }
+  const pill = t.closest('sup.rf');
+  if (pill) return openCite(+pill.dataset.n || null);
+  const lnk = t.closest('span.wl, a.xl');
+  if (lnk) { e.preventDefault(); return openLink(lnk); }
+  const ib = t.closest('.ib');
+  if (ib) return openInfobox(ib);
+  const at = t.closest('.ta, .blk');
+  if (at) return openRaw(at);
+});
+vis.addEventListener('paste', e => {
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text/plain').replace(/\r\n?/g, '\n');
+  if (!text) return;
+  if (!restoreV()) return toast('Click in the text where it should go first');
+  let html;
+  if (/\n/.test(text.trim())) html = renderDoc(text, true);
+  else { const m = renderDoc(text.trim(), true).match(/^<p>([\s\S]*)<\/p>$/); html = m ? m[1] : renderDoc(text, true); }
+  try { insertHtmlAt(curRange() || vrange, html); } catch (err) { return toast('Could not paste: ' + err.message); }
+  visToSrc(); save();
+});
+['copy', 'cut'].forEach(ev => vis.addEventListener(ev, e => {
+  const s = getSelection();
+  if (!s.rangeCount || s.isCollapsed) return;
+  const box = document.createElement('div'); box.appendChild(s.getRangeAt(0).cloneContents());
+  e.clipboardData.setData('text/plain', serialize(box));
+  e.preventDefault();
+  if (ev === 'cut') { document.execCommand('delete'); dirty = 'vis'; schedule(); }
+}));
+
+/* =============== modes, dialogs =============== */
+function setMode(m) {
+  if (dirty) flush();
+  work.dataset.mode = m;
+  document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+  if (m !== 'source' && visStale) srcToVis();
+}
+$('#modes').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setMode(b.dataset.mode); });
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
+document.querySelectorAll('[data-ret]').forEach(b => b.addEventListener('click', () => $('#ask-dlg').close(b.dataset.ret)));
+// Enter in a dialog's single-line field presses its main button (forms are not used, so the browser will not do it)
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || !e.target.matches('dialog input') || e.target.closest('.ibrow')) return;
+  e.preventDefault();
+  const b = e.target.closest('dialog').querySelector('.btn.primary:not([hidden])');
+  if (b) b.click();
+});
+
+/* =============== files, clipboard, share =============== */
+async function copyText(text, msg) {
+  try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return toast(msg); } } catch (e) {}
+  const tmp = document.createElement('textarea'); tmp.value = text; tmp.style.cssText = 'position:fixed;left:-9999px';
+  document.body.appendChild(tmp); tmp.select();
+  let ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+  tmp.remove();
+  if (ok) return toast(msg);
+  $('#text-box').value = text; $('#text-dlg').showModal(); $('#text-box').select();
+}
+const b64 = {
+  enc: u => { let s = ''; u.forEach(x => s += String.fromCharCode(x)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
+  dec: s => { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }
+};
+async function pack(text) {
+  const raw = new TextEncoder().encode(text);
+  if (window.CompressionStream) return 'z.' + b64.enc(new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer()));
+  return 'r.' + b64.enc(raw);
+}
+async function unpack(p) {
+  const u = b64.dec(p.slice(2));
+  if (p.startsWith('z.')) return new TextDecoder().decode(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+  return new TextDecoder().decode(u);
+}
+async function loadFromHash() {
+  if (!location.hash.startsWith('#draft=')) return;
+  let txt;
+  try { txt = await unpack(location.hash.slice(7)); } catch (e) { return toast('That shared link could not be read'); }
+  try { history.replaceState(null, '', location.href.split('#')[0]); } catch (e) {}
+  if (ta.value.trim() && ta.value !== txt && !(await ask('Open the shared draft? It replaces the draft currently in this browser.', 'Open shared draft'))) return;
+  setText(txt); toast('Shared draft loaded');
+}
+function fileName() {
+  const t = getText(), m = t.match(/^=\s*(.+?)\s*=\s*$/m) || t.match(/\|\s*name\s*=\s*(.+)/);
+  return ((m ? m[1] : 'wikipedia-draft').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '_') || 'wikipedia-draft') + '.wiki';
+}
+$('#b-copy').onclick = () => copyText(getText(), 'Copied wikitext to the clipboard');
+$('#b-share').onclick = async () => {
+  const t = getText();
+  if (!t.trim()) return toast('Nothing to share yet');
+  const url = location.href.split('#')[0] + '#draft=' + await pack(t);
+  copyText(url, 'Share link copied (' + url.length + ' characters). It is a snapshot of the draft as it is now');
+};
+$('#b-download').onclick = () => {
+  const a = document.createElement('a'), name = fileName();
+  a.href = URL.createObjectURL(new Blob([getText()], { type: 'text/plain;charset=utf-8' }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast('Download started: ' + name + '. If nothing arrives, use Copy wikitext');
+};
+$('#b-import').onclick = () => $('#file').click();
+$('#file').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  const txt = await f.text();
+  if (getText().trim() && !(await ask('Replace the current draft with "' + f.name + '"?', 'Replace'))) return;
+  setText(txt); toast('Imported ' + f.name);
+};
+$('#b-new').onclick = async () => { if (!getText().trim() || await ask('Clear the editor and start a new draft? Download first if you need a copy.', 'Clear')) setText(''); };
+
+
+/* =============== live sharing (Firebase Realtime Database over its REST API) =============== */
+const LIVE_KEY = 'wikidraft_live_v1';
+const DB_OK = /^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)*\.(firebaseio\.com|firebasedatabase\.app)\/?$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/i;
+const RULES = `{
+  "rules": {
+    "wikidraft": {
+      "$session": {
+        ".read": true,
+        ".write": true,
+        ".validate": "newData.hasChildren(['text', 'rev']) && newData.child('text').isString() && newData.child('text').val().length < 300000"
+      }
+    }
+  }
+}`;
+const dbUrl = (db, id, path) => db.replace(/\/$/, '') + '/wikidraft/' + id + (path || '') + '.json';
+const newId = () => { const u = new Uint8Array(18); crypto.getRandomValues(u); return b64.enc(u); };
+const watchCode = () => b64.enc(new TextEncoder().encode(live.db + '|' + live.id));
+function parseWatch(input) {
+  let s = (input || '').trim();
+  const i = s.indexOf('#watch='); if (i >= 0) s = s.slice(i + 7);
+  s = s.split('&')[0];
+  try { const [db, id] = new TextDecoder().decode(b64.dec(s)).split('|'); if (DB_OK.test(db) && /^[\w-]{10,}$/.test(id)) return { db, id }; } catch (e) {}
+  return null;
+}
+function liveLoad() { try { const o = JSON.parse(localStorage.getItem(LIVE_KEY) || '{}'); live.db = o.db || ''; live.id = o.id || ''; } catch (e) {} }
+function liveStore() { try { localStorage.setItem(LIVE_KEY, JSON.stringify({ db: live.db, id: live.on ? live.id : '' })); } catch (e) {} }
+
+async function livePush(force) {
+  if (!live.on) return;
+  const t = ta.value;
+  if (!force && t === live.last) return;
+  try {
+    const r = await fetch(dbUrl(live.db, live.id), { method: 'PUT', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ text: t, rev: Date.now(), updated: Date.now() }) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    live.last = t; live.err = '';
+  } catch (e) { live.err = e.message || 'failed'; }
+  liveUi();
+}
+function liveSoon() { clearTimeout(live.timer); live.timer = setTimeout(() => livePush(false), 1200); }
+
+function liveUi() {
+  const b = $('#b-live');
+  b.textContent = live.on ? (live.err ? '\u25CF Live (retrying)' : '\u25CF Live') : 'Go live';
+  b.classList.toggle('on', live.on && !live.err); b.classList.toggle('err', live.on && !!live.err);
+  const setup = !live.db, on = live.on;
+  $('#lv-setup').hidden = !setup; $('#lv-ready').hidden = setup || on; $('#lv-on').hidden = !on;
+  $('#lv-save').hidden = !setup; $('#lv-start').hidden = setup || on;
+  $('#lv-change').hidden = setup || on; $('#lv-stop').hidden = !on;
+  if (on) {
+    const hosted = /^https?:$/.test(location.protocol);
+    $('#lv-link').value = location.href.split('#')[0] + '#watch=' + watchCode();
+    $('#lv-code').value = watchCode();
+    $('#lv-linknote').textContent = hosted ? 'The link opens this tool for them, so it only works if this file is hosted online (for example on GitHub Pages).' : 'You opened this from a file on your computer, so the link will not open on their machine. Send the code instead.';
+    $('#lv-linknote').className = 'note' + (hosted ? '' : ' bad');
+    $('#lv-msg').textContent = live.err ? 'Last update failed (' + live.err + '). It will retry when you next edit.' : '';
+  }
+}
+function openLive() { $('#lv-rules').value = RULES; $('#lv-db').value = live.db; $('#lv-msg').textContent = ''; liveUi(); $('#live-dlg').showModal(); }
+$('#b-live').onclick = openLive;
+$('#lv-copy-rules').onclick = () => copyText(RULES, 'Rules copied');
+$('#lv-copy-link').onclick = () => copyText($('#lv-link').value, 'Watch link copied');
+$('#lv-copy-code').onclick = () => copyText($('#lv-code').value, 'Watch code copied');
+$('#lv-save').onclick = () => {
+  const v = $('#lv-db').value.trim();
+  if (!DB_OK.test(v)) { $('#lv-msg').textContent = 'That does not look like a Firebase Realtime Database URL (it ends in firebaseio.com or firebasedatabase.app).'; return; }
+  live.db = v.replace(/\/$/, ''); liveStore(); $('#lv-msg').textContent = ''; liveUi();
+};
+$('#lv-change').onclick = () => { live.db = ''; liveStore(); liveUi(); $('#lv-db').focus(); };
+$('#lv-start').onclick = async () => {
+  $('#lv-msg').textContent = 'Connecting...';
+  live.id = newId(); live.on = true; live.last = null;
+  await livePush(true);
+  if (live.err) {
+    const why = live.err; live.on = false; live.id = ''; live.err = ''; liveUi();
+    $('#lv-msg').textContent = 'Could not write to your database (' + why + '). Check the URL and that the rules were published.'; return;
+  }
+  liveStore(); liveUi(); $('#lv-msg').textContent = '';
+};
+$('#lv-stop').onclick = async () => {
+  const id = live.id; live.on = false; live.err = ''; liveStore(); liveUi();
+  try { await fetch(dbUrl(live.db, id), { method: 'DELETE' }); toast('Live session stopped and deleted'); } catch (e) { toast('Session stopped. The data could not be deleted, remove it in the Firebase console'); }
+};
+
+/* ---- viewer ---- */
+$('#b-watch').onclick = () => { $('#w-code').value = ''; $('#w-err').textContent = ''; $('#watch-dlg').showModal(); $('#w-code').focus(); };
+$('#w-go').onclick = () => {
+  const w = parseWatch($('#w-code').value);
+  if (!w) { $('#w-err').textContent = 'That code or link is not valid.'; return; }
+  $('#watch-dlg').close(); enterViewer(w);
+};
+async function enterViewer(w) {
+  if (viewing) exitViewer();
+  if (dirty) flush();
+  ownDraft = ta.value; viewing = true; const token = ++watchToken;
+  document.body.classList.add('viewing'); vis.contentEditable = 'false'; ta.readOnly = true; $('#watchbar').hidden = false;
+  if (modeNow() === 'split') setMode('visual');
+  const say = m => { $('#watchmsg').textContent = m; };
+  let lastRev = null, lastChange = Date.now();
+  say('Connecting...');
+  while (viewing && token === watchToken) {
+    try {
+      const r = await fetch(dbUrl(w.db, w.id, '/rev'), { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const rev = await r.json();
+      if (rev === null) say('This live session has ended, or the code is wrong');
+      else {
+        if (rev !== lastRev) {
+          const r2 = await fetch(dbUrl(w.db, w.id), { cache: 'no-store' });
+          const o = await r2.json();
+          if (o && typeof o.text === 'string' && token === watchToken) { lastRev = rev; lastChange = o.updated || Date.now(); ta.value = o.text; renderVisual(o.text); }
+        }
+        say('\u25CF Live. Last change at ' + new Date(lastChange).toLocaleTimeString());
+      }
+    } catch (e) { say('Reconnecting...'); }
+    await new Promise(res => setTimeout(res, 2000));
+  }
+}
+function exitViewer() {
+  viewing = false; watchToken++;
+  document.body.classList.remove('viewing'); vis.contentEditable = 'true'; ta.readOnly = false; $('#watchbar').hidden = true;
+  ta.value = ownDraft; renderVisual(ownDraft);
+}
+$('#b-exit').onclick = exitViewer;
+
+window.addEventListener('error', e => toast('Something went wrong: ' + e.message));
+window.addEventListener('unhandledrejection', e => toast('Something went wrong: ' + (e.reason && e.reason.message || e.reason)));
+
+/* =============== start =============== */
+(async function init() {
+  try { document.execCommand('defaultParagraphSeparator', false, 'p'); document.execCommand('styleWithCSS', false, false); } catch (e) {}
+  let saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) { setSaved(false); }
+  ta.value = saved || '';
+  renderVisual(ta.value);
+  setMode('visual');
+  await loadFromHash();
+  liveLoad();
+  if (live.db && live.id) { live.on = true; livePush(true); }
+  liveUi();
+  const startWatch = () => { if (location.hash.startsWith('#watch=')) { const w = parseWatch(location.hash); if (w) enterViewer(w); else toast('That watch link is not valid'); } };
+  startWatch();
+  window.addEventListener('hashchange', () => { loadFromHash(); startWatch(); });
+})();
+</script>
+</body>
+</html>
